@@ -14,6 +14,4 @@ make DEBUG_MODE_RUN=1
 
 
 ## TODO
-- Modularize and sanitify so that it's not just monolithic code
-- Add better funciton naming
-- Seperate key cracking from key finalization
+- Improve debug mode so that it has more print statements to debug
