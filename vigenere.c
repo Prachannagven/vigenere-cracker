@@ -40,7 +40,7 @@ const float letter_frequencies[26] = {
 };
 
 char* vigenere_decode(char* ct, char* key);
-void vigenere_encrypt();
+void vigenere_encrypt(char* filename);
 void vigenere_keycrack(char* text, char** keys);
 void vigenere_decrypt(char* filename);
 float* frequency_analysis(char* text, int start, int interval);
@@ -52,7 +52,10 @@ int main(int argc, char* argv[]) {
 
     switch (op) {
     case 'E':
-        vigenere_encrypt();
+        printf("Enter Filename: ");
+        char* fn_e = malloc(MAX_FILENAME_SIZE);
+        scanf("%s", fn_e);
+        vigenere_encrypt(fn_e);
         break;
     case 'D':
         printf("Enter Filename: ");
@@ -153,7 +156,6 @@ void vigenere_keycrack(char* text, char** keys) {
     free(window);
 }
 
-
 char* vigenere_decode(char* ct, char* key) {
     // Rename to vigenere_decode
     int i;
@@ -170,11 +172,11 @@ char* vigenere_decode(char* ct, char* key) {
     return pt;
 }
 
-void vigenere_decrypt(char* filename){
+void vigenere_decrypt(char* filename) {
     int i, j;
-    //Read file for input
+    // Read file for input
     FILE* fp;
-    fp = fopen("input.txt", "r");
+    fp = fopen(filename, "r");
     if (fp == NULL) {
         printf("Fuck you no file bad bad bad\n");
         return;
@@ -183,13 +185,14 @@ void vigenere_decrypt(char* filename){
     char text[MAX_PT_SIZE];
 
     // Now we have text
-    while (fgets(text, MAX_PT_SIZE, fp) != NULL);
+    while (fgets(text, MAX_PT_SIZE, fp) != NULL)
+        ;
 
     // Check with user
     printf("Decode with (K) or without key (N)?");
     char dop;
     scanf(" %c", &dop);
-    if (dop=='K') {
+    if (dop == 'K') {
         printf("Enter Key: ");
         char* key = malloc(MAX_KEY_SIZE);
         scanf("%s", key);
@@ -201,10 +204,10 @@ void vigenere_decrypt(char* filename){
     }
 
     // Decryption without key
-    char** keys = malloc(3*sizeof(char*));
+    char** keys = malloc(3 * sizeof(char*));
     vigenere_keycrack(text, keys);
 
-    //Decryption
+    // Decryption
     char* decrypt_text_arr[3];
     // char* check = malloc(strlen(text));
     for (i = 0; i < 3; i++)
@@ -228,11 +231,11 @@ void vigenere_decrypt(char* filename){
         }
         decrypt_distances[i] /= 26;
 
-        // Print the keys, min distances and then decrypted text for each key
-        #if DEBUG_MODE_RUN
+// Print the keys, min distances and then decrypted text for each key
+#if DEBUG_MODE_RUN
         printf("Key: %s \t \t Distance: %f\t\t DecrDist: %f\n", keys[i], min_dists[i],
                decrypt_distances[i]);
-        #endif
+#endif
     }
 
     float min = INFINITY;
@@ -246,19 +249,22 @@ void vigenere_decrypt(char* filename){
 
     printf("Key is %s\n", keys[min_idx]);
     printf("Decrypted text is\n\n %s\n", decrypt_text_arr[min_idx]);
-    for (i = 0; i<3; i++) free(decrypt_text_arr[i]);
+    for (i = 0; i < 3; i++)
+        free(decrypt_text_arr[i]);
     free(keys);
 }
 
-void vigenere_encrypt() {
+void vigenere_encrypt(char* filename) {
     int i;
+    FILE* fp = fopen(filename, "r");
+
+    char* pt = malloc(MAX_PT_SIZE);
+    while (fgets(pt, MAX_PT_SIZE, fp) != NULL)
+        ;
+
     printf("Enter Key: ");
     char* key = malloc(MAX_KEY_SIZE);
     scanf("%s", key);
-
-    printf("Enter Plaintext: ");
-    char* pt = malloc(MAX_PT_SIZE);
-    scanf("%s", pt);
 
     int key_len_1 = strlen(key);
     char* ct = malloc(strlen(pt));
