@@ -1,7 +1,7 @@
 DEBUG_MODE_RUN ?= 0
 
 all:
-	gcc -g vigenere-encrypt.c -o executable-exe -DDEBUG_MODE_RUN=$(DEBUG_MODE_RUN) 
+	gcc -g vigenere.c -o executable-exe -DDEBUG_MODE_RUN=$(DEBUG_MODE_RUN) 
 	./executable-exe
 
 clean:
