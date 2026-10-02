@@ -4,6 +4,7 @@
 #include <string.h>
 #define MAX_KEY_SIZE 10
 #define MAX_PT_SIZE 500
+#define MAX_FILENAME_SIZE 20
 
 #ifndef DEBUG_MODE_RUN
 #define DEBUG_MODE_RUN 0
@@ -38,9 +39,11 @@ const float letter_frequencies[26] = {
     0.07f  // z
 };
 
-char* vigenere_decrypt(char* ct, char* key);
+char* vigenere_decode(char* ct, char* key);
 void vigenere_encrypt();
-void vigenere_keycrack();
+void vigenere_keycrack(char* text, char** keys);
+void vigenere_decrypt(char* filename);
+float* frequency_analysis(char* text, int start, int interval);
 
 int main(int argc, char* argv[]) {
     printf("E or D\n");
@@ -52,7 +55,10 @@ int main(int argc, char* argv[]) {
         vigenere_encrypt();
         break;
     case 'D':
-        vigenere_keycrack();
+        printf("Enter Filename: ");
+        char* fn = malloc(MAX_FILENAME_SIZE);
+        scanf("%s", fn);
+        vigenere_decrypt(fn);
         break;
     default:
         printf("You're stupid\n");
@@ -60,21 +66,22 @@ int main(int argc, char* argv[]) {
     }
 }
 
-void vigenere_keycrack() {
-    int i, j;
+float* frequency_analysis(char* text, int start, int interval) {
+    float* freq_anal = malloc(26 * sizeof(float));
 
-    FILE* fp;
-    fp = fopen("input.txt", "r");
-    if (fp == NULL) {
-        printf("Fuck you no file bad bad bad\n");
-        return;
+    for (int j = start; j < strlen(text); j += interval) {
+        freq_anal[text[j] - 65]++;
     }
+    int sum_freqs = 0;
+    for (int j = 0; j < 26; j++)
+        sum_freqs += freq_anal[j];
+    for (int j = 0; j < 26; j++)
+        freq_anal[j] /= sum_freqs;
+    return freq_anal;
+}
 
-    char text[MAX_PT_SIZE];
-
-    // Now we have text
-    while (fgets(text, MAX_PT_SIZE, fp) != NULL)
-        ;
+void vigenere_keycrack(char* text, char** keys) {
+    int i, j;
 
     int* freqs = malloc(20 * sizeof(int));
     char* curr = malloc(3);
@@ -110,25 +117,17 @@ void vigenere_keycrack() {
         }
     }
 
-    char* keys[3];
     for (i = 0; i < 3; i++) {
         keys[i] = malloc(key_lens[i]);
     }
 
     float min_dists[3] = {INFINITY, INFINITY, INFINITY};
-    float* freq_anal = malloc(26 * sizeof(float));
+    float* freq_anal;
 
     for (int l = 0; l < 3; l++) {
         for (i = 0; i < key_lens[l]; i++) {
             // Each character of key
-            for (j = i; j < strlen(text); j += key_lens[l]) {
-                freq_anal[text[j] - 65]++;
-            }
-            int sum_freqs = 0;
-            for (j = 0; j < 26; j++)
-                sum_freqs += freq_anal[j];
-            for (j = 0; j < 26; j++)
-                freq_anal[j] /= sum_freqs;
+            freq_anal = frequency_analysis(text, i, key_lens[l]);
 
             min_dists[l] = INFINITY;
             int min_ind = 0;
@@ -148,66 +147,14 @@ void vigenere_keycrack() {
             keys[l][i] = (char)(min_ind + 65);
         }
     }
-
-    char* decrypt_text_arr[3];
-    char* check = malloc(strlen(text));
-    for (i = 0; i < 3; i++)
-        decrypt_text_arr[i] = malloc(strlen(text));
-    float decrypt_distances[3];
-
-    for (int i = 0; i < 3; i++) {
-        // Decrypt
-        check = vigenere_decrypt(text, keys[i]);
-        decrypt_text_arr[i] = check;
-        // Frequency Analysis and Match
-        decrypt_distances[i] = 0;
-        int sum_freqs = 0;
-
-        for (j = 0; j < strlen(text); j++) {
-            freq_anal[decrypt_text_arr[i][j] - 'A']++;
-        }
-        for (j = 0; j < 26; j++)
-            sum_freqs += freq_anal[j];
-        for (j = 0; j < 26; j++)
-            freq_anal[j] /= sum_freqs;
-
-        for (int k = 0; k < 26; k++) {
-            decrypt_distances[i] += fabs(letter_frequencies[k] - 100 * freq_anal[k]);
-        }
-        decrypt_distances[i] /= 26;
-
-        // Print the keys, min distances and then decrypted text for each key
-#if DEBUG_MODE_RUN
-        printf("Key: %s \t \t Distance: %f\t\t DecrDist: %f\n", keys[i], min_dists[i],
-               decrypt_distances[i]);
-#endif
-    }
-
-    float min = INFINITY;
-    int min_idx = 0;
-    for (i = 0; i < 3; i++) {
-        if (decrypt_distances[i] < min) {
-            min = decrypt_distances[i];
-            min_idx = i;
-        }
-    }
-
-    printf("Key is %s\n", keys[min_idx]);
-    printf("Decrypted text is\n\n %s\n", decrypt_text_arr[min_idx]);
-    free(check);
+    free(freq_anal);
+    free(freqs);
+    free(curr);
+    free(window);
 }
 
-float* freqency_analysis(char* text_arr) {
-    // TODO
-    return NULL;
-}
 
-void vigenere_full(char* filename) {
-    // Call vigenere_keycrack
-    // Call vigenere_decode
-}
-
-char* vigenere_decrypt(char* ct, char* key) {
+char* vigenere_decode(char* ct, char* key) {
     // Rename to vigenere_decode
     int i;
     int key_len_1 = strlen(key);
@@ -221,6 +168,86 @@ char* vigenere_decrypt(char* ct, char* key) {
     }
 
     return pt;
+}
+
+void vigenere_decrypt(char* filename){
+    int i, j;
+    //Read file for input
+    FILE* fp;
+    fp = fopen("input.txt", "r");
+    if (fp == NULL) {
+        printf("Fuck you no file bad bad bad\n");
+        return;
+    }
+
+    char text[MAX_PT_SIZE];
+
+    // Now we have text
+    while (fgets(text, MAX_PT_SIZE, fp) != NULL);
+
+    // Check with user
+    printf("Decode with (K) or without key (N)?");
+    char dop;
+    scanf(" %c", &dop);
+    if (dop=='K') {
+        printf("Enter Key: ");
+        char* key = malloc(MAX_KEY_SIZE);
+        scanf("%s", key);
+        char* pt = malloc(MAX_PT_SIZE);
+        pt = vigenere_decode(text, key);
+        printf("Decrypted text is\n\n %s\n", pt);
+        free(pt);
+        return;
+    }
+
+    // Decryption without key
+    char** keys = malloc(3*sizeof(char*));
+    vigenere_keycrack(text, keys);
+
+    //Decryption
+    char* decrypt_text_arr[3];
+    // char* check = malloc(strlen(text));
+    for (i = 0; i < 3; i++)
+        decrypt_text_arr[i] = malloc(strlen(text));
+
+    float decrypt_distances[3];
+
+    float* freq_anal;
+
+    for (int i = 0; i < 3; i++) {
+        decrypt_text_arr[i] = vigenere_decode(text, keys[i]);
+        // decrypt_text_arr[i] = check;
+        // Frequency Analysis and Match
+        decrypt_distances[i] = 0;
+        int sum_freqs = 0;
+
+        freq_anal = frequency_analysis(decrypt_text_arr[i], 0, 1);
+
+        for (int k = 0; k < 26; k++) {
+            decrypt_distances[i] += fabs(letter_frequencies[k] - 100 * freq_anal[k]);
+        }
+        decrypt_distances[i] /= 26;
+
+        // Print the keys, min distances and then decrypted text for each key
+        #if DEBUG_MODE_RUN
+        printf("Key: %s \t \t Distance: %f\t\t DecrDist: %f\n", keys[i], min_dists[i],
+               decrypt_distances[i]);
+        #endif
+    }
+
+    float min = INFINITY;
+    int min_idx = 0;
+    for (i = 0; i < 3; i++) {
+        if (decrypt_distances[i] < min) {
+            min = decrypt_distances[i];
+            min_idx = i;
+        }
+    }
+
+    printf("Key is %s\n", keys[min_idx]);
+    printf("Decrypted text is\n\n %s\n", decrypt_text_arr[min_idx]);
+    for (i = 0; i<3; i++) free(decrypt_text_arr[i]);
+    free(keys);
 }
 
 void vigenere_encrypt() {
